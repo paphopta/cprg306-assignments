@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
   const [tasks, setTasks] = useState([]);
@@ -13,6 +14,8 @@ export default function Page() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [priorities, setPriorities] = useState([]);
   const [statuses, setStatuses] = useState([]);
+  const [user, setUser] = useState(null);
+  const router = useRouter();
 
   /* Load tasks from Supabase */
   async function fetchTasks() {
@@ -222,6 +225,7 @@ export default function Page() {
     fetchTasks();
   }
 
+  /* Delete task in supabase */
   async function deleteTask(taskId) {
     const { error } = await supabase
       .from("cprg306_task")
@@ -235,7 +239,14 @@ export default function Page() {
     fetchTasks();
   }
 
+  /* Check log in? */
+  const getUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+  };
+
   useEffect(() => {
+    getUser();
     fetchTasks();
     fetchPriorities();
     fetchStatuses();
@@ -254,19 +265,41 @@ export default function Page() {
     setFilteredTasks(filtered);
   };
 
+  /* Log out */
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    router.replace('/project/login');
+  };
+
   return (
     <div className="w-full bg-black flex items-center justify-center min-h-full p-2">
       <div className="container max-w-full">
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
 
-           {/* Header text and add button */}
+           {/* Header text, logout and add buttons */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-xl font-bold text-gray-800">Task Management</h2>
                 <p className="text-gray-500 mt-1">Manage tasks and add new task here.</p>
               </div>
-              <div className="mt-4 md:mt-0">
+              <div className="mt-4 md:mt-0 flex space-x-2">
+                {!user && ( <button
+                  onClick={() => router.push('/project/login')}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 mx-2 rounded-lg transition duration-150 ease-in-out"
+                >
+                  Log in
+                </button>)}
+                {user && ( <button
+                  onClick={handleLogout}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 mx-2 rounded-lg transition duration-150 ease-in-out"
+                >
+                  Logout
+                </button>)}
                 <button 
                   onClick={() => {
                     setModalMode("add");
@@ -301,9 +334,9 @@ export default function Page() {
                   type="text" 
                   className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
                   placeholder="Search tasks..."
-                  onChange={(e) => {
-                    setSearchKeyword(e.target.value);
-                    filterTasks(e.target.value, selectedGroup);
+                  onChange={(event) => {
+                    setSearchKeyword(event.target.value);
+                    filterTasks(event.target.value, selectedGroup);
                   }}
                   onKeyDown={filterTasks}
                 />
@@ -311,8 +344,8 @@ export default function Page() {
               <div>
                 <select 
                   value={selectedGroup}
-                  onChange={(e) => {
-                      const group = e.target.value;
+                  onChange={(event) => {
+                      const group = event.target.value;
                       setSelectedGroup(group);
                       filterTasks(searchKeyword, group);
                   }}
@@ -532,7 +565,7 @@ export default function Page() {
                     type="text"
                     placeholder="Task Name"
                     value={selectedTask?.task_name || ""}
-                    onChange={(e) =>setSelectedTask({ ...selectedTask, task_name: e.target.value })}
+                    onChange={(event) =>setSelectedTask({ ...selectedTask, task_name: event.target.value })}
                   />
                 </div>
                 <div className="mb-2">
@@ -542,7 +575,7 @@ export default function Page() {
                     type="text"
                     placeholder="Group"
                     value={selectedTask?.group || ""}
-                    onChange={(e) =>setSelectedTask({ ...selectedTask, group: e.target.value })}
+                    onChange={(event) =>setSelectedTask({ ...selectedTask, group: event.target.value })}
                   />
                 </div>
                 <div className="mb-2">
@@ -552,7 +585,7 @@ export default function Page() {
                     type="text"
                     placeholder="Description"
                     value={selectedTask?.description || ""}
-                    onChange={(e) =>setSelectedTask({ ...selectedTask, description: e.target.value })}
+                    onChange={(event) =>setSelectedTask({ ...selectedTask, description: event.target.value })}
                   />
                 </div>
                 <div className="mb-2">
@@ -560,7 +593,7 @@ export default function Page() {
                   <select
                     className="border p-2 shadow-md border-gray-700 focus:outline-none ease-in-out duration-300 rounded-lg w-full bg-white"
                     value={selectedTask?.priority_id || ""}
-                    onChange={(e) => setSelectedTask({...selectedTask, priority_id: Number(e.target.value)})}
+                    onChange={(event) => setSelectedTask({...selectedTask, priority_id: Number(event.target.value)})}
                   >
                     <option value="" disabled>Select Priority</option>
                     {priorities.map((priority) => (
@@ -573,7 +606,7 @@ export default function Page() {
                   <select
                     className="border p-2 shadow-md border-gray-700 focus:outline-none ease-in-out duration-300 rounded-lg w-full bg-white"
                     value={selectedTask?.status_id || ""}
-                    onChange={(e) => setSelectedTask({...selectedTask, status_id: Number(e.target.value)})}
+                    onChange={(event) => setSelectedTask({...selectedTask, status_id: Number(event.target.value)})}
                   >
                     <option value="" disabled>Select Status</option>
                     {statuses.map((status) => (
@@ -588,7 +621,7 @@ export default function Page() {
                     type="date"
                     placeholder="Planned Start Date"
                     value={selectedTask?.planned_start_date || ""}
-                    onChange={(e) =>setSelectedTask({ ...selectedTask, planned_start_date: e.target.value })}
+                    onChange={(event) =>setSelectedTask({ ...selectedTask, planned_start_date: event.target.value })}
                   />
                 </div>
                 <div className="mb-2">
@@ -598,7 +631,7 @@ export default function Page() {
                     type="date"
                     placeholder="Planned End Date"
                     value={selectedTask?.planned_end_date || ""}
-                    onChange={(e) =>setSelectedTask({ ...selectedTask, planned_end_date: e.target.value })}
+                    onChange={(event) =>setSelectedTask({ ...selectedTask, planned_end_date: event.target.value })}
                   />
                 </div>
                 <div className="mb-2">
@@ -608,7 +641,7 @@ export default function Page() {
                     type="date"
                     placeholder="Actual Start Date"
                     value={selectedTask?.actual_start_date || ""}
-                    onChange={(e) =>setSelectedTask({ ...selectedTask, actual_start_date: e.target.value })}
+                    onChange={(event) =>setSelectedTask({ ...selectedTask, actual_start_date: event.target.value })}
                   />
                 </div>
                 <div className="mb-2">
@@ -618,7 +651,7 @@ export default function Page() {
                     type="date"
                     placeholder="Actual End Date"
                     value={selectedTask?.actual_end_date || ""}
-                    onChange={(e) =>setSelectedTask({ ...selectedTask, actual_end_date: e.target.value })}
+                    onChange={(event) =>setSelectedTask({ ...selectedTask, actual_end_date: event.target.value })}
                   />
                 </div>
                 <div className="mb-2">
@@ -628,7 +661,7 @@ export default function Page() {
                     type="text"
                     placeholder="Actual Progress (%)"
                     value={selectedTask?.actual_progress || ""}
-                    onChange={(e) =>setSelectedTask({ ...selectedTask, actual_progress: e.target.value })}
+                    onChange={(event) =>setSelectedTask({ ...selectedTask, actual_progress: event.target.value })}
                   />
                 </div>
               </div>
