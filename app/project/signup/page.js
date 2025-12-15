@@ -38,7 +38,7 @@ export default function SignupPage() {
       password,
     },
     {
-      redirectTo: `${window.location.origin}/project/login`,
+      emailRedirectTo: "https://cprg306-assignments-paphop.vercel.app/project/login",
     }
     );
 
@@ -46,7 +46,7 @@ export default function SignupPage() {
       alert(error.message);
     } else {
       alert("Signup successful. Check your email to confirm signup.");
-      router.push('/');
+      router.push('/project/login');
     }
 
     setLoading(false);
